@@ -11,49 +11,6 @@ import cvBarDetect
 
 root = Tk()
 
-maxBarLength = 240
-maxBarHeight = 29
-hpBbox = (1626, 910, 1626 + maxBarLength, 910 + maxBarHeight)
-thirstBbox = (1626, 954, 1626 + maxBarLength, 954 + 28)
-hungerBbox = (1626, 997, 1626 + maxBarLength, 997 + maxBarHeight)
-hpMaxImg = Image.open('hpMax.png')
-thirstMaxImg = Image.open('thirstMax.png')
-hungerMaxImg = Image.open('hungerMax.png')
-hpMatch = []
-thirstMatch = []
-hungerMatch = []
-r, g, b = (0, 1, 2)
-
-def createBarProfile(im, matchList):
-    width, height = im.size
-    im = im.load()
-    i = 0
-    while i < height:
-        j = 0
-        while j < width:
-            curr = im[j, i]
-            if curr not in matchList:
-                matchList.append(curr)
-            j = j + 1
-        i = i + 1
-
-def getBarLength(im, matchList):
-    width, height = im.size
-    im = im.load()
-    barLength = 0
-    x = 0
-    while x < width:
-        y = 0
-        while y < height:
-            curr = im[x, y]
-            if curr in matchList:
-                barLength = barLength + 1
-                y = height
-            else:
-                y = y + 1
-        x = x + 1
-    return barLength
-
 barLength = [0]
     
 def calibrate():
@@ -76,10 +33,6 @@ def calibrate():
         barLength[0] = max(barLengths)
     print 'finished calibration'
     
-createBarProfile(hpMaxImg, hpMatch)
-createBarProfile(thirstMaxImg, thirstMatch)
-createBarProfile(hungerMaxImg, hungerMatch)
-
 b = Button(root, text="Calibrate", command=calibrate)
 b.pack()
 hpPanel = Label(root, image = None)

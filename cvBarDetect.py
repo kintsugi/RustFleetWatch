@@ -8,9 +8,6 @@ hpLimits = [np.array([40, 110, 90]), np.array([80, 200, 160])]
 thirstLimits = [np.array([120, 70, 15]), np.array([240, 180, 80])]
 hungerLimits = [np.array([30, 90, 175]), np.array([80, 160, 255])]
 calibrationBarHeight = 0
-maskNum = 0
-contourNum = 0   
-testImage = np.array([])
 
 def getKey(item):
     return item[1]
@@ -21,9 +18,6 @@ def getMask(image, limits):
 
 def getContours(image, limits):
     shapeMask = getMask(image, limits)
-    global maskNum
-    cv2.imwrite('mask' + str(maskNum) + '.png', shapeMask)
-    maskNum = maskNum + 1
     (cnts, _) = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
 	cv2.CHAIN_APPROX_SIMPLE)
 
@@ -32,8 +26,6 @@ def getContours(image, limits):
 def getBarBBoxes(image):
     #convert to openCV format if necessary
     image = convertToOpenCV(image)
-    global testImage
-    testImage = image.copy()
     hpContours = getContours(image, hpLimits)
     thirstContours = getContours(image, thirstLimits)
     hungerContours = getContours(image, hungerLimits)
@@ -55,12 +47,8 @@ def getCalibratedBarBBoxes(contours):
         approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
         print h, calibrationBarHeight
         if h == calibrationBarHeight and len(approx) == 4:
-            print 'showing'
-            global testImage
-            global contourNum
             cv2.drawContours(testImage, [cnt], -1, (0, 255, 0), 2)
             cv2.imwrite('contour' + str(contourNum) + '.png', testImage)
-            contourNum = contourNum + 1
             return (x, y, w, h)
     print 'Warning: could not find matching contour in calibrated detection'
     return (0, 0, 0, 0)
@@ -71,6 +59,7 @@ def guessAtBarBBox(hpContours, thirstContours, hungerContours):
     #thirst contour is the only contour that is a rectangle
     #hunger contour is the only detected contour
     bboxes = []
+    #find hp
     hpAreaTuples = []
     for cnt in hpContours:
         hpAreaTuples.append((cnt, cv2.contourArea(cnt)))
@@ -85,6 +74,8 @@ def guessAtBarBBox(hpContours, thirstContours, hungerContours):
     except IndexError:
         print "No found area tuple for hp bar"
         bboxes.append((0, 0, 0, 0))
+
+    #find thirst
     if len(thirstContours) == 0:
         print "No contour found for thirst bar"
         bboxes.append((0, 0, 0, 0))
@@ -93,6 +84,7 @@ def guessAtBarBBox(hpContours, thirstContours, hungerContours):
         approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
         if len(approx) == 4:
             bboxes.append(cv2.boundingRect(cnt))
+    #find hunger
     try:
         bboxes.append(cv2.boundingRect(hungerContours[0]))
     except IndexError:
