@@ -1,0 +1,64 @@
+<head>
+<script src="/socket.io/socket.io.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+<link rel="stylesheet" type="text/css" href="/css/ss.css">
+</head>
+<script>
+     var socket = io.connect();
+     
+     socket.on('userlist', function(data, fn){
+        $("#userlist").empty();
+        var users = $.map(data, function(el) { return el });
+        for(var i = 0; i < users.length; i++) {
+            console.log("working");   
+            var $playerdiv = $("<div>", {id: users[i].username, class: 'player'});
+            
+            var $playername = $("<p>", {class: 'name', id: users[i].username + "label"});
+            $playername.text(users[i].username)
+            
+            var $healthbar = $("<div>", {id: users[i].username + "health", class: 'meter'});
+            var $healthbarfill = $("<span>", {class: 'health'});
+            $healthbarfill.css("width", users[i].health + "%");
+            $healthbar.append($healthbarfill);
+            
+            var $hungerbar = $("<div>", {id: users[i].username + "hunger", class: 'meter'});
+            var $hungerbarfill = $("<span>", {class: 'hunger'});
+            $hungerbarfill.css("width", users[i].hunger + "%");
+            $hungerbar.append($hungerbarfill);
+            
+            var $thirstbar = $("<div>", {id: users[i].username + "thirst", class: 'meter'});
+            var $thirstbarfill = $("<span>", {class: 'thirst'});
+            $thirstbarfill.css("width", users[i].thirst + "%");
+            $thirstbar.append($thirstbarfill);
+            
+            var $inventory = $("<p>", {class: 'inventory'});
+            var invstring = ""
+            if(users[i].bolt == true) {
+                invstring += "bolt\n"
+            }
+            if(users[i].AK == true) {
+                invstring += "AK\n"
+            }
+            if(users[i].pipe == true) {
+                invstring += "pipe\n"
+            }
+            if(users[i].pistol == true) {
+                invstring += "pistol\n"
+            }
+            $inventory.text(invstring);
+            
+            $playerdiv.append($playername);
+            $playerdiv.append($healthbar);
+            $playerdiv.append($thirstbar);
+            $playerdiv.append($hungerbar);
+            $playerdiv.append($inventory);
+            
+            $("#userlist").append($playerdiv);
+        }
+     });
+
+</script>
+
+<body>
+    <div id="userlist"></div>
+</body>
