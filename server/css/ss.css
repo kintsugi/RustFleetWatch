@@ -1,0 +1,57 @@
+.player {
+    display: inline-block;
+    width: 150px;
+    height: 150px;
+    margin: 20px;
+    border: 3px solid #262626;
+    background-color: #737373;
+}
+
+.meter {
+    background-color: #737373;
+    border: 1px solid darkolivegreen;
+    position: relative;
+    display: block;
+    height: 10%;
+    width: 90%;
+    margin-top: 5px;
+    margin-left: auto;
+    margin-right:auto;
+}
+
+.meter > span {
+    display: block;
+    height: 100%;
+    overflow: hidden;
+}
+
+.name {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-transform: uppercase;
+    font-size: 16px;
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.health {
+    background-color: #6E8C3C;
+}
+
+.thirst {
+    background-color: #1B679B;
+}
+
+.hunger {
+    background-color: #C96D2C;
+}
+
+.inventory {
+    text-align: center;
+}
+
+body {
+    background-color: #111111;
+}
