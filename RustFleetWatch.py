@@ -10,10 +10,11 @@ import time
 import cvBarDetect
 
 root = Tk()
-
-barLength = [0]
+barLength = 0
+debug = True
     
 def calibrate():
+    global barLength
     activeWindow = win32gui.FindWindow(None, 'Rust')
     rect = win32gui.GetWindowRect(activeWindow)
     inGameRect = win32gui.GetClientRect(activeWindow)
@@ -23,30 +24,35 @@ def calibrate():
     screen = ImageGrab.grab((x0 + int(float(x1) * 0.5), y0 + int(float(y1) * 0.5), x1, y1))
     bboxes = cvBarDetect.getBarBBoxes(screen)
     cvBarDetect.calibrateLimits(screen, bboxes)
-    print bboxes
     barLengths = [bboxes[0][2], bboxes[1][2], bboxes[2][2]]
     if barLengths[0] == barLengths[1] and barLengths[0] == barLengths[2]:
-        barLength[0] = barLengths[0]
+        barLength = barLengths[0]
     else:
         print 'Warning: Calibrated bar lengths are not uniform', barLengths
-        barLength[0] = max(barLengths)
+        barLength = max(barLengths)
     print 'finished calibration'
     
 b = Button(root, text="Calibrate", command=calibrate)
 b.pack()
-#uncomment to show ui
-#hpPanel = Label(root, image = None)
-#hpPanel.pack()
-#hpText = Label(root, text="HP")
-#hpText.pack()
-#thirstPanel = Label(root, image = None)
-#thirstPanel.pack() 
-#thirstText = Label(root, text="Thirst")
-#thirstText.pack()
-#hungerPanel = Label(root, image = None)
-#hungerPanel.pack()
-#hungerText = Label(root, text="Hunger")
-#hungerText.pack()
+hpPanel = None
+hpText = None
+thirstPanel = None
+thirstText = None
+hungerPanel = None
+hungerText = None
+if debug:
+    hpPanel = Label(root, image = None)
+    hpPanel.pack()
+    hpText = Label(root, text="HP")
+    hpText.pack()
+    thirstPanel = Label(root, image = None)
+    thirstPanel.pack() 
+    thirstText = Label(root, text="Thirst")
+    thirstText.pack()
+    hungerPanel = Label(root, image = None)
+    hungerPanel.pack()
+    hungerText = Label(root, text="Hunger")
+    hungerText.pack()
 
 def getGameScreenImg(rustWindow):
     inGameRect = win32gui.GetClientRect(rustWindow)
@@ -57,10 +63,16 @@ def getGameScreenImg(rustWindow):
     return (screen, screenBBox)
 
 def loop():
+    global barLength
+    global debug
     rustWindow = win32gui.GetForegroundWindow()
-    if win32gui.GetWindowText(rustWindow) == 'Rust' and barLength[0] != 0:
+    if win32gui.GetWindowText(rustWindow) == 'Rust' and barLength != 0:
         screenImg, screenBBox = getGameScreenImg(rustWindow)
         bboxes = cvBarDetect.getBarBBoxes(screenImg)
+        hp = float(bboxes[0][2]) / barLength * 100
+        thirst = float(bboxes[1][2]) / barLength * 100
+        hunger = float(bboxes[2][2]) / barLength * 100
+        #print hp, thirst, hunger
         def showBar(bbox, imgPanel, textPanel, textPrefix):
             x0, y0 = win32gui.ClientToScreen(rustWindow, (int(float(screenBBox[2]) * 0.5) + bbox[0], int(float(screenBBox[3]) * 0.5) + bbox[1]))
             x1, y1 = win32gui.ClientToScreen(rustWindow, (int(float(screenBBox[2]) * 0.5) + bbox[0] + bbox[2], int(float(screenBBox[3]) * 0.5) + bbox[1] + bbox[3]))
@@ -69,10 +81,13 @@ def loop():
             uiImage = ImageTk.PhotoImage(barImg)
             imgPanel.configure(image = uiImage)
             imgPanel.image = uiImage
-            textStr = textPrefix + str(float(bbox[2]) / barLength[0] * 100) + "%"
+            textStr = textPrefix + str(float(bbox[2]) / barLength * 100) + "%"
             textPanel.configure(text = textStr)
-    else:
-        root.after(500, loop)
+        if debug:
+            showBar(bboxes[0], hpPanel, hpText, "HP: ")
+            showBar(bboxes[1], thirstPanel, thirstText, "HP: ")
+            showBar(bboxes[2], hungerPanel, hungerText, "HP: ")
+    root.after(1, loop)
 root.attributes("-topmost", True)
-root.after(500, loop)
+root.after(1, loop)
 root.mainloop()
