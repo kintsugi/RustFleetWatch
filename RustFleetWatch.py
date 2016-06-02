@@ -23,7 +23,6 @@ def calibrate():
     screen = ImageGrab.grab((x0 + int(float(x1) * 0.5), y0 + int(float(y1) * 0.5), x1, y1))
     bboxes = cvBarDetect.getBarBBoxes(screen)
     cvBarDetect.calibrateLimits(screen, bboxes)
-    screen.save('screen.png', 'PNG')
     print bboxes
     barLengths = [bboxes[0][2], bboxes[1][2], bboxes[2][2]]
     if barLengths[0] == barLengths[1] and barLengths[0] == barLengths[2]:
@@ -35,18 +34,19 @@ def calibrate():
     
 b = Button(root, text="Calibrate", command=calibrate)
 b.pack()
-hpPanel = Label(root, image = None)
-hpPanel.pack()
-hpText = Label(root, text="HP")
-hpText.pack()
-thirstPanel = Label(root, image = None)
-thirstPanel.pack() 
-thirstText = Label(root, text="Thirst")
-thirstText.pack()
-hungerPanel = Label(root, image = None)
-hungerPanel.pack()
-hungerText = Label(root, text="Hunger")
-hungerText.pack()
+#uncomment to show ui
+#hpPanel = Label(root, image = None)
+#hpPanel.pack()
+#hpText = Label(root, text="HP")
+#hpText.pack()
+#thirstPanel = Label(root, image = None)
+#thirstPanel.pack() 
+#thirstText = Label(root, text="Thirst")
+#thirstText.pack()
+#hungerPanel = Label(root, image = None)
+#hungerPanel.pack()
+#hungerText = Label(root, text="Hunger")
+#hungerText.pack()
 
 def getGameScreenImg(rustWindow):
     inGameRect = win32gui.GetClientRect(rustWindow)
@@ -59,10 +59,8 @@ def getGameScreenImg(rustWindow):
 def loop():
     rustWindow = win32gui.GetForegroundWindow()
     if win32gui.GetWindowText(rustWindow) == 'Rust' and barLength[0] != 0:
-        print "update"
         screenImg, screenBBox = getGameScreenImg(rustWindow)
         bboxes = cvBarDetect.getBarBBoxes(screenImg)
-        screenImg.save('screen.png','PNG')
         def showBar(bbox, imgPanel, textPanel, textPrefix):
             x0, y0 = win32gui.ClientToScreen(rustWindow, (int(float(screenBBox[2]) * 0.5) + bbox[0], int(float(screenBBox[3]) * 0.5) + bbox[1]))
             x1, y1 = win32gui.ClientToScreen(rustWindow, (int(float(screenBBox[2]) * 0.5) + bbox[0] + bbox[2], int(float(screenBBox[3]) * 0.5) + bbox[1] + bbox[3]))
@@ -73,9 +71,6 @@ def loop():
             imgPanel.image = uiImage
             textStr = textPrefix + str(float(bbox[2]) / barLength[0] * 100) + "%"
             textPanel.configure(text = textStr)
-        showBar(bboxes[0], hpPanel, hpText, 'HP: ')
-        showBar(bboxes[1], thirstPanel, thirstText, 'Thirst: ')
-        showBar(bboxes[2], hungerPanel, hungerText, 'Hunger: ')
     else:
         root.after(500, loop)
 root.attributes("-topmost", True)
