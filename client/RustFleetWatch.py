@@ -31,13 +31,19 @@ def calibrate():
         barLength = barLengths[0]
     else:
         print 'Warning: Calibrated bar lengths are not uniform', barLengths
-        barLength = max(barLengths)
+        barLength = barLengths[0]
+        hpRatio = float(healthCalibrationInput.get()) / 100
+        barLength = barLength / hpRatio
     print 'finished calibration'
 
 userNameLabel = Label(root, text="Username:")
 userNameLabel.pack()
 userNameInput = Entry(root, bd =5)
-userNameInput.pack()    
+userNameInput.pack()
+healthCalibrationLabel = Label(root, text="Current HP:")
+healthCalibrationLabel.pack()
+healthCalibrationInput = Entry(root, bd =5)
+healthCalibrationInput.pack()
 b = Button(root, text="Calibrate", command=calibrate)
 b.pack()
 hpPanel = None

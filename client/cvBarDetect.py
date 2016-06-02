@@ -8,6 +8,8 @@ hpLimits = [np.array([50, 100, 100]), np.array([65, 255, 255])]
 thirstLimits = [np.array([140, 150, 120]), np.array([150, 255, 255])]
 hungerLimits = [np.array([10, 150, 150]), np.array([20, 255, 255])]
 calibrationBarHeight = 0
+tolerance = 5
+lower, upper = (0, 0)
 
 def getKey(item):
     return item[1]
@@ -43,10 +45,11 @@ def getBarBBoxes(image):
         
   
 def getCalibratedBarBBoxes(contours):
+    global lower, upper
     for cnt in contours:
         (x, y, w, h) = cv2.boundingRect(cnt)
         approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
-        if h == calibrationBarHeight and len(approx) == 4:
+        if h < upper and h > lower and len(approx) == 4:
             return (x, y, w, h)
     print 'Warning: could not find matching contour in calibrated detection'
     return [0]
@@ -58,8 +61,9 @@ def guessAtBarBBox(hpContours, thirstContours, hungerContours):
     #hunger contour is the only detected contour
     bboxes = [None] * 3
     global calibrationBarHeight
-    lower, upper = (0, 0)
-    tolerance = 5
+    global tolerance
+    global lower, upper
+
     if len(thirstContours) == 0:
         print "No contour found for thirst bar"
         bboxes[1] = (0, 0, 0, 0)
@@ -134,4 +138,4 @@ def setLimits(barImg, limits):
                     max[i] = currPixel[i]
     min.reverse()
     max.reverse()
-    limits = [np.array(min), np.array(max)]imits = [np.array(min), np.array(max)]
+    limits = [np.array(min), np.array(max)]
