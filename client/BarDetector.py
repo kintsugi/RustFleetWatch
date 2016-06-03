@@ -249,7 +249,7 @@ class ActionBarDetector:
     # TODO:
     #
     #   - Get images for all weapons in the game
-    #   - Find a solution for resolutions whose action bar slots are smaller than 64x64
+    #   - Find a solution for other resolutions than 64x64 of action bar slots
     #
     # Example usage:
     #
