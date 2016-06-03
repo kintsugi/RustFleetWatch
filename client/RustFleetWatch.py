@@ -1,145 +1,150 @@
-import os, sys
+
+import os, sys, win32gui, base64, zlib, tempfile, json
 from Tkinter import *
-from PIL import Image
 from PIL import ImageTk
-from PIL import ImageGrab
-import time
-import math
-import win32gui
-import win32ui
-import win32con
-import time
-import cvBarDetect
+from BarDetector import BarDetector
 from socketIO_client import SocketIO, LoggingNamespace
 
-root = Tk()
-barLength = 0
-debug = True
-host = 'watchlist.ageudum.com'
-port = 80
-socketIO = SocketIO(host, port, LoggingNamespace)
-    
-def calibrate():
-    global barLength
-    rustWindow = win32gui.FindWindow(None, 'Rust')
 
-    screenImg = getGameScreenImg(rustWindow)
-    bboxes = cvBarDetect.getBarBBoxes(screenImg)
-    cvBarDetect.calibrateLimits(screenImg, bboxes)
-    barLengths = [bboxes[0][2], bboxes[1][2], bboxes[2][2]]
-    if barLengths[0] == barLengths[1] and barLengths[0] == barLengths[2]:
-        barLength = barLengths[0]
-    else:
-        print 'Warning: Calibrated bar lengths are not uniform', barLengths
-        barLength = barLengths[0]
-        hpRatio = float(healthCalibrationInput.get()) / 100
-        barLength = barLength / hpRatio
-    print 'finished calibration'
 
-userNameLabel = Label(root, text="Username:")
-userNameLabel.pack()
-userNameInput = Entry(root, bd =5)
-userNameInput.pack()
-healthCalibrationLabel = Label(root, text="Current HP:")
-healthCalibrationLabel.pack()
-healthCalibrationInput = Entry(root, bd =5)
-healthCalibrationInput.pack()
-b = Button(root, text="Calibrate", command=calibrate)
-b.pack()
-hpPanel = None
-hpText = None
-thirstPanel = None
-thirstText = None
-hungerPanel = None
-hungerText = None
-if debug:
-    hpPanel = Label(root, image = None)
-    hpPanel.pack()
-    hpText = Label(root, text="HP")
-    hpText.pack()
-    thirstPanel = Label(root, image = None)
-    thirstPanel.pack() 
-    thirstText = Label(root, text="Thirst")
-    thirstText.pack()
-    hungerPanel = Label(root, image = None)
-    hungerPanel.pack()
-    hungerText = Label(root, text="Hunger")
-    hungerText.pack()
+class App:
 
-def getGameScreenImg(hwnd):
-    hwnd = win32gui.FindWindow(None, 'Rust')
-    clientOrigin = win32gui.ClientToScreen(hwnd, (0, 0))
-    windowRect = win32gui.GetWindowRect(hwnd)
-    clientRect = win32gui.GetClientRect(hwnd)
-    l,t,r,b=win32gui.GetWindowRect(hwnd)
-    h=b-t
-    w=r-l
-    hDC = win32gui.GetWindowDC(hwnd)
-    myDC=win32ui.CreateDCFromHandle(hDC)
-    newDC=myDC.CreateCompatibleDC()
+    debug = True
+    host = '45.55.211.208'
+    port = 3000
+    defaultHertz = 2
+   
     
-    myBitMap = win32ui.CreateBitmap()
-    myBitMap.CreateCompatibleBitmap(myDC, w, h)
-    
-    newDC.SelectObject(myBitMap)
-    
-    win32gui.SetForegroundWindow(hwnd)
-    time.sleep(0.1)
-    newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
-    myBitMap.Paint(newDC)
-    bmpinfo = myBitMap.GetInfo()
-    bmpstr = myBitMap.GetBitmapBits(True)
-    screenImg = Image.frombuffer(
-        'RGB',
-        (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-        bmpstr, 'raw', 'BGRX', 0, 1)
-    screenImg = screenImg.crop((clientOrigin[0] - windowRect[0], clientOrigin[1] - windowRect[1], clientRect[2] + (clientOrigin[0] - windowRect[0]), clientRect[3] + (clientOrigin[1] - windowRect[1])))
-    width, height = screenImg.size
-    screenImg = screenImg.crop((int(width * 0.5), int(height * 0.5), width, height))
-    screenImg.save('test.png', 'PNG')
-    return screenImg
-
-def generatePayload(stats):
-    print stats
-    stats['username'] = userNameInput.get()
-    stats['bolt'] = False
-    stats['AK'] = False
-    stats['pistol'] = False
-    stats['pipe'] = False
-    socketIO.emit('playerupdate', stats)
-    
-    
-def loop():
-    global barLength
-    global debug
-    rustWindow = win32gui.GetForegroundWindow()
-    if win32gui.GetWindowText(rustWindow) == 'Rust' and barLength != 0:
-        screenImg = getGameScreenImg(rustWindow)
-        bboxes = cvBarDetect.getBarBBoxes(screenImg)
+    def __init__(self):
         
-        stats = {}
-        stats['health'] = int(float(bboxes[0][2]) / barLength * 100)
-        stats['thirst'] = int(float(bboxes[1][2]) / barLength * 100)
-        stats['hunger'] = int(float(bboxes[2][2]) / barLength * 100)
-        #print hp, thirst, hunger
-        generatePayload(stats)
-
-        def showBar(bbox, imgPanel, textPanel, textPrefix):
-            x0, y0 = (bbox[0], bbox[1])
-            x1, y1 = (bbox[0] + bbox[2], bbox[1] + bbox[3])
-            barBBox = (x0, y0, x1, y1)
-            barImg = screenImg.crop(barBBox)
-            uiImage = ImageTk.PhotoImage(barImg)
-            imgPanel.configure(image = uiImage)
-            imgPanel.image = uiImage
-            textStr = textPrefix + str(float(bbox[2]) / barLength * 100) + "%"
-            textPanel.configure(text = textStr)
-        if debug:
-            showBar(bboxes[0], hpPanel, hpText, "HP: ")
-            showBar(bboxes[1], thirstPanel, thirstText, "Thirst: ")
-            showBar(bboxes[2], hungerPanel, hungerText, "Hunger: ")
+        self.root = Tk()
+        self.root.wm_title("Rust Fleet Watchlist")
+        self.root.minsize(width=250, height=425)
+        self.root.attributes("-topmost", True)
         
-    root.after(100, loop)
-root.attributes("-topmost", True)
-root.after(100, loop)
-root.mainloop()
+        #Removing default tk icon until a better one is found
+        #http://stackoverflow.com/questions/550050/removing-the-tk-icon-on-a-tkinter-window
+        ICON = zlib.decompress(base64.b64decode('eJxjYGAEQgEBBiDJwZDBy'
+        'sAgxsDAoAHEQCEGBQaIOAg4sDIgACMUj4JRMApGwQgF/ykEAFXxQRc='))
+        _, ICON_PATH = tempfile.mkstemp()
+        with open(ICON_PATH, 'wb') as icon_file:
+            icon_file.write(ICON)
+        self.root.iconbitmap(default=ICON_PATH)
+        
+        self.userName = StringVar(self.root, "")
+        if os.path.exists('user.json'):
+            with open('user.json') as dataFile:
+                user = json.load(dataFile)
+                self.userName.set(user['userName'])
+        self.hertz = StringVar(self.root, self.defaultHertz)
+        self.socketIO = SocketIO(self.host, self.port, LoggingNamespace)
+        
+        self.userNameLabel = Label(self.root, text="Username:")
+        self.userNameInput = Entry(self.root, textvariable=self.userName, bd =5)
+        
+        self.healthCalibrationLabel = Label(self.root, text="Current HP:")
+        self.healthCalibrationInput = Entry(self.root, bd =5)
+        
+        self.thirstCalibrationLabel = Label(self.root, text="Current Thirst:")
+        self.thirstCalibrationInput = Entry(self.root, bd =5)
+        
+        self.hungerCalibrationLabel = Label(self.root, text="Current Hunger:")
+        self.hungerCalibrationInput = Entry(self.root, bd =5)
+        
+        self.calibrateButton = Button(self.root, text="Calibrate", command=self.onCalibrateButtonPress)
+        
+        self.frequencyLabel = Label(self.root, text="Update Frequency (Hertz):")
+        self.frequencyInput = Entry(self.root, textvariable=self.hertz, bd =5)
+        
+        self.userNameLabel.pack()
+        self.userNameInput.pack()
+        
+        self.healthCalibrationLabel.pack()
+        self.healthCalibrationInput.pack()
+        
+        self.thirstCalibrationLabel.pack()
+        self.thirstCalibrationInput.pack()
+        
+        self.hungerCalibrationLabel.pack()
+        self.hungerCalibrationInput.pack()
+        
+        self.calibrateButton.pack()
+
+        
+
+        self.barDetector = BarDetector()
+        if self.barDetector.calibrated:
+            self.confLoadedLabel = Label(self.root, text="Previous Calibration Loaded")
+            self.confLoadedLabel.pack()
+        
+        self.frequencyLabel.pack()
+        self.frequencyInput.pack()        
+        if self.debug:
+            self.hpPanel = Label(self.root, image = None)
+            self.hpPanel.pack()
+            self.hpText = Label(self.root, text="HP")
+            self.hpText.pack()
+            self.thirstPanel = Label(self.root, image = None)
+            self.thirstPanel.pack() 
+            self.thirstText = Label(self.root, text="Thirst")
+            self.thirstText.pack()
+            self.hungerPanel = Label(self.root, image = None)
+            self.hungerPanel.pack()
+            self.hungerText = Label(self.root, text="Hunger")
+            self.hungerText.pack()
+        self.root.after(self.delay(), self.loop)
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
+        self.root.mainloop()
+    
+    def onCalibrateButtonPress(self):
+        rustWindow = win32gui.FindWindow(None, 'Rust')
+        if(rustWindow):
+            self.barDetector.calibrate(rustWindow, self.healthCalibrationInput.get(), self.thirstCalibrationInput.get(), self.hungerCalibrationInput.get())
+            
+    
+    def loop(self):
+        self.hertz.set(self.frequencyInput.get())
+        rustWindow = win32gui.GetForegroundWindow()
+        if win32gui.GetWindowText(rustWindow) == 'Rust' and self.barDetector.calibrated:
+            stats = self.barDetector.getStats(rustWindow)
+            def showBar(value, barImage, imgPanel, textPanel, textPrefix):
+                uiImage = ImageTk.PhotoImage(barImage)
+                imgPanel.configure(image = uiImage)
+                imgPanel.image = uiImage
+                valueStr = textPrefix + str(value) + "%"
+                textPanel.configure(text = valueStr)
+            if self.debug:
+                showBar(stats['health'], self.barDetector.hpBarImg, self.hpPanel, self.hpText, "HP: ")
+                showBar(stats['thirst'], self.barDetector.thirstBarImg, self.thirstPanel, self.thirstText, "Thirst: ")
+                showBar(stats['hunger'], self.barDetector.hungerBarImg, self.hungerPanel, self.hungerText, "Hunger: ")
+            self.generatePayload(stats)
+        self.root.after(self.delay(), self.loop)
+    
+    def generatePayload(self, stats):
+        print stats
+        stats['username'] = self.userNameInput.get()
+        stats['bolt'] = False
+        stats['AK'] = False
+        stats['pistol'] = False
+        stats['pipe'] = False
+        self.socketIO.emit('playerupdate', stats)
+        
+    def quit(self):
+        #write username to disk
+        user = {}
+        user['userName'] = self.userNameInput.get()
+        with open('user.json', 'w') as dataFile:
+            json.dump(user, dataFile)
+        self.socketIO.disconnect()
+        self.root.destroy()
+        
+    def delay(self):
+        hertz = self.hertz.get()
+        if len(hertz) == 0:
+            hertz = self.defaultHertz
+        return int(1000 / float(hertz))
+
+
+if __name__ == '__main__':
+    app = App()
+
