@@ -181,30 +181,26 @@ class BarDetector:
             self.currentBarBoundingBoxes = [(0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)]
             
     def approximateBoundingBoxes(self, barContours):
-        #tries to find the bars with these assumptions:
-        #The thirst bar is the easiest to detect as there are no other bars on the
-        #screen that are very similar in color or saturation.
-        #testing has shown that the ground is detected when using the hunger bar limits
-        #and the HP bar shares limits with the building privelege bar and tool durability bars
-        #All bars are always uniform in height, and there is should be no other object that has the
-        #same height as the bars. Therefore, if the thirst bar is accurately determined, there is
-        #a high probability that a detected contour with similar height to the thirst bar is
-        #the hp/hunger bar
+        #Approximate bounding boxes by using the following ruleset:
+        #Hunger bar does not have as many similarly saturated images in the screen
+        #as thirst/hp. Assuming we have found it, then because the hp and thirst bars
+        #are similar in height, we can narrow down the potential detected contours
+        
         hpContours, thirstContours, hungerContours = barContours
         self.calibratedBoundingBoxes = [(0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)]
-        #approximate thirst bar
+        #approximate hunger bar
         if len(hungerContours) == 0:
             print "No contour found for hunger bar while approximating, aborting approximation"
             return
         for cnt in hungerContours:
-            #thirst bar is a rectangle, len(approx) is the number of edges
+            #hunger bar is a rectangle, len(approx) is the number of edges
             approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
             if len(approx) == 4:
                 self.calibratedBoundingBoxes[2] = cv2.boundingRect(cnt)
                 self.calibrationBarDimensions[1] = self.calibratedBoundingBoxes[2][3]
                 self.lower, self.upper = self.calibrationBarDimensions[1] - self.tolerance, self.calibrationBarDimensions[1] + self.tolerance
-        #approximate hunger bar. If no bar similar in height to thirst bar is found, take the 
-        #first detected contour
+
+        #approximate thirst bar
         try:
             foundBar = False
             for cnt in thirstContours:
@@ -217,8 +213,7 @@ class BarDetector:
         except IndexError:
             print "No contour found for thirst bar"
             self.calibratedBoundingBoxes[1] = (0, 0, 0, 0)
-        #approximate health bar, If no bar similar in height to thirst bar is found, either take the
-        #second largest contour in area (e.g. building privilege bar is detected) or the first detected bar
+        #approximate hp bar
         try:
             foundBar = False
             for cnt in hpContours:
@@ -227,6 +222,7 @@ class BarDetector:
                     self.calibratedBoundingBoxes[0] = rect
                     foundBar = True
             if foundBar == False:
+                #hp bar will be the second largest bar is building priv bar on screen
                 hpAreaTuples = []
                 for cnt in hpContours:
                     hpAreaTuples.append((cnt, cv2.contourArea(cnt)))
