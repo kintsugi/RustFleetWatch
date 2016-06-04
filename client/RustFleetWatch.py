@@ -1,20 +1,41 @@
-
 import os, sys, win32gui, base64, zlib, tempfile, json
 from Tkinter import *
 from PIL import ImageTk
 from BarDetector import BarDetector
 from socketIO_client import SocketIO, LoggingNamespace
+import threading, time
 
+stats = {}
+delay = 0.5
 
+class sioThread (threading.Thread):
+    
+    connected = True
+    host = 'watchlist.ageudum.com'
+    port = 80
+
+    def __init__(self,threadID,name):
+        threading.Thread.__init__(self)       
+        self.threadID=threadID
+        self.name = name
+        self.socketIO = SocketIO(self.host,  self.port)
+    
+    def run(self):
+        global stats, delay
+        
+        while self.connected == True:
+            print stats
+            print self.connected
+            self.socketIO.emit('playerupdate', stats)
+            self.socketIO.wait(seconds=delay)
+       
+        self.socketIO.disconnect()
 
 class App:
 
     debug = True
-    host = 'watchlist.ageudum.com'
-    port = 80
     defaultHertz = 2
-   
-    
+
     def __init__(self):
         
         self.root = Tk()
@@ -37,7 +58,6 @@ class App:
                 user = json.load(dataFile)
                 self.userName.set(user['userName'])
         self.hertz = StringVar(self.root, self.defaultHertz)
-        self.socketIO = SocketIO(self.host, self.port, LoggingNamespace)
         
         self.userNameLabel = Label(self.root, text="Username:")
         self.userNameInput = Entry(self.root, textvariable=self.userName, bd =5)
@@ -94,6 +114,8 @@ class App:
             self.hungerText.pack()
         self.root.after(self.delay(), self.loop)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
+        self.socketThread = sioThread(1, 'sio')
+        self.socketThread.start()
         self.root.mainloop()
     
     def onCalibrateButtonPress(self):
@@ -103,6 +125,7 @@ class App:
             
     
     def loop(self):
+        global delay, stats
         self.hertz.set(self.frequencyInput.get())
         rustWindow = win32gui.GetForegroundWindow()
         if win32gui.GetWindowText(rustWindow) == 'Rust' and self.barDetector.calibrated:
@@ -117,17 +140,18 @@ class App:
                 showBar(stats['health'], self.barDetector.hpBarImg, self.hpPanel, self.hpText, "HP: ")
                 showBar(stats['thirst'], self.barDetector.thirstBarImg, self.thirstPanel, self.thirstText, "Thirst: ")
                 showBar(stats['hunger'], self.barDetector.hungerBarImg, self.hungerPanel, self.hungerText, "Hunger: ")
-            self.generatePayload(stats)
-        self.root.after(self.delay(), self.loop)
+            self.generatePayload()
+        delay = self.delay()
+        self.root.after(delay, self.loop)
     
-    def generatePayload(self, stats):
-        print stats
+    def generatePayload(self):
+        global stats
+        
         stats['username'] = self.userNameInput.get()
         stats['bolt'] = False
         stats['AK'] = False
         stats['pistol'] = False
         stats['pipe'] = False
-        self.socketIO.emit('playerupdate', stats)
         
     def quit(self):
         #write username to disk
@@ -135,7 +159,7 @@ class App:
         user['userName'] = self.userNameInput.get()
         with open('user.json', 'w') as dataFile:
             json.dump(user, dataFile)
-        self.socketIO.disconnect()
+        self.socketThread.connected = False
         self.root.destroy()
         
     def delay(self):
@@ -143,6 +167,7 @@ class App:
         if len(hertz) == 0:
             hertz = self.defaultHertz
         return int(1000 / float(hertz))
+
 
 
 if __name__ == '__main__':
