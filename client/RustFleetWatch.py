@@ -1,43 +1,30 @@
 import os, sys, win32gui, base64, zlib, tempfile, json
-from Tkinter import *
+from mtTkinter import *
+import tkMessageBox
 from PIL import ImageTk
 from BarDetector import BarDetector
 from socketIO_client import SocketIO, LoggingNamespace
-import threading, time
-
-stats = {}
-delay = 0.5
-
-class sioThread (threading.Thread):
-    
-    connected = True
-    host = 'watchlist.ageudum.com'
-    port = 80
-
-    def __init__(self,threadID,name):
-        threading.Thread.__init__(self)       
-        self.threadID=threadID
-        self.name = name
-        self.socketIO = SocketIO(self.host,  self.port)
-    
-    def run(self):
-        global stats, delay
-        
-        while self.connected == True:
-            print stats
-            print self.connected
-            self.socketIO.emit('playerupdate', stats)
-            self.socketIO.wait(seconds=delay)
-       
-        self.socketIO.disconnect()
+import logging
+logging.basicConfig(filename='log.txt', level=logging.INFO, 
+                    format='%(asctime)s %(levelname)s %(name)s %(filename)s %(module)s.%(funcName)s line:%(lineno)d %(message)s')
+logger=logging.getLogger(__name__)
 
 class App:
 
     debug = True
+    host = '45.55.211.208'
+    port = 3000
     defaultHertz = 2
-
+    
     def __init__(self):
         
+        try:
+            self.socketIO = SocketIO(self.host, self.port, LoggingNamespace, False)
+        except Exception as err:
+            logger.error(err)
+            tkMessageBox.showinfo("Error connecting to server.", "Could not connect to server.\nCheck internet connection or contact server admin with log.txt.")
+            return
+
         self.root = Tk()
         self.root.wm_title("Rust Fleet Watchlist")
         self.root.minsize(width=250, height=425)
@@ -57,8 +44,9 @@ class App:
             with open('user.json') as dataFile:
                 user = json.load(dataFile)
                 self.userName.set(user['userName'])
+
         self.hertz = StringVar(self.root, self.defaultHertz)
-        
+          
         self.userNameLabel = Label(self.root, text="Username:")
         self.userNameInput = Entry(self.root, textvariable=self.userName, bd =5)
         
@@ -114,44 +102,44 @@ class App:
             self.hungerText.pack()
         self.root.after(self.delay(), self.loop)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
-        self.socketThread = sioThread(1, 'sio')
-        self.socketThread.start()
         self.root.mainloop()
     
     def onCalibrateButtonPress(self):
-        rustWindow = win32gui.FindWindow(None, 'Rust')
-        if(rustWindow):
-            self.barDetector.calibrate(rustWindow, self.healthCalibrationInput.get(), self.thirstCalibrationInput.get(), self.hungerCalibrationInput.get())
+        try:
+            rustWindow = win32gui.FindWindow(None, 'Rust')
+            if(rustWindow):
+                self.barDetector.calibrate(rustWindow, self.healthCalibrationInput.get(), self.thirstCalibrationInput.get(), self.hungerCalibrationInput.get())
+        except Exception as err:
+            logger.error(err)
             
-    
     def loop(self):
-        global delay, stats
-        self.hertz.set(self.frequencyInput.get())
-        rustWindow = win32gui.GetForegroundWindow()
-        if win32gui.GetWindowText(rustWindow) == 'Rust' and self.barDetector.calibrated:
-            stats = self.barDetector.getStats(rustWindow)
-            def showBar(value, barImage, imgPanel, textPanel, textPrefix):
-                uiImage = ImageTk.PhotoImage(barImage)
-                imgPanel.configure(image = uiImage)
-                imgPanel.image = uiImage
-                valueStr = textPrefix + str(value) + "%"
-                textPanel.configure(text = valueStr)
-            if self.debug:
-                showBar(stats['health'], self.barDetector.hpBarImg, self.hpPanel, self.hpText, "HP: ")
-                showBar(stats['thirst'], self.barDetector.thirstBarImg, self.thirstPanel, self.thirstText, "Thirst: ")
-                showBar(stats['hunger'], self.barDetector.hungerBarImg, self.hungerPanel, self.hungerText, "Hunger: ")
-            self.generatePayload()
-        delay = self.delay()
-        self.root.after(delay, self.loop)
+        try:
+            self.hertz.set(self.frequencyInput.get())
+            rustWindow = win32gui.GetForegroundWindow()
+            if win32gui.GetWindowText(rustWindow) == 'Rust' and self.barDetector.calibrated and self.socketIO.connected:
+                stats = self.barDetector.getStats(rustWindow)
+                def showBar(value, barImage, imgPanel, textPanel, textPrefix):
+                    uiImage = ImageTk.PhotoImage(barImage)
+                    imgPanel.configure(image = uiImage)
+                    imgPanel.image = uiImage
+                    valueStr = textPrefix + str(value) + "%"
+                    textPanel.configure(text = valueStr)
+                if self.debug:
+                    showBar(stats['health'], self.barDetector.hpBarImg, self.hpPanel, self.hpText, "HP: ")
+                    showBar(stats['thirst'], self.barDetector.thirstBarImg, self.thirstPanel, self.thirstText, "Thirst: ")
+                    showBar(stats['hunger'], self.barDetector.hungerBarImg, self.hungerPanel, self.hungerText, "Hunger: ")
+                self.generatePayload(stats)
+        except Exception as err:
+            logger.error(err)
+        self.root.after(self.delay(), self.loop)
     
-    def generatePayload(self):
-        global stats
-        
+    def generatePayload(self, stats):
         stats['username'] = self.userNameInput.get()
         stats['bolt'] = False
         stats['AK'] = False
         stats['pistol'] = False
         stats['pipe'] = False
+        self.socketIO.emit('playerupdate', stats)
         
     def quit(self):
         #write username to disk
@@ -159,7 +147,7 @@ class App:
         user['userName'] = self.userNameInput.get()
         with open('user.json', 'w') as dataFile:
             json.dump(user, dataFile)
-        self.socketThread.connected = False
+        self.socketIO.disconnect()
         self.root.destroy()
         
     def delay(self):
@@ -169,7 +157,6 @@ class App:
         return int(1000 / float(hertz))
 
 
-
 if __name__ == '__main__':
+    logging.info('Application start')
     app = App()
-

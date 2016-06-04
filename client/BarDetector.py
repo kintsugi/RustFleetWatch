@@ -1,66 +1,72 @@
 import numpy as np 
 from PIL import Image
-import os, win32gui, win32ui, win32con, cv2, time, math, json
+import os, win32gui, win32ui, win32con, cv2, time, math, json, logging
 
 def getKey(item):
     return item[1]
 
-# Returns a PIL Image containing a screenshot of a region specified by left, top, right, bottom.
-# left, top, right, bottom. are specified as a float between 0 and 1 which specify a percentage of
-# the maximum screen coordinates.
-#
-# This might seem like primo autism but it's the most convenient way I could think of in 20 seconds
-# to keep this resolution agnostic.
-
-def getGameScreenImg(hwnd, left, top, right, bottom):
-    # http://stackoverflow.com/questions/3260559/how-to-get-a-window-or-fullscreen-screenshot-in-python-3k-without-pil
-    clientOrigin = win32gui.ClientToScreen(hwnd, (0, 0))
-    windowRect = win32gui.GetWindowRect(hwnd)
-    clientRect = win32gui.GetClientRect(hwnd)
-    l,t,r,b=win32gui.GetWindowRect(hwnd)
-    h=b-t
-    w=r-l
-    hDC = win32gui.GetWindowDC(hwnd)
-    myDC=win32ui.CreateDCFromHandle(hDC)
-    newDC=myDC.CreateCompatibleDC()
-    
-    myBitMap = win32ui.CreateBitmap()
-    myBitMap.CreateCompatibleBitmap(myDC, w, h)
-    
-    newDC.SelectObject(myBitMap)
-    
-    win32gui.SetForegroundWindow(hwnd)
-    time.sleep(0.1)
-    newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
-    myBitMap.Paint(newDC)
-    bmpinfo = myBitMap.GetInfo()
-    bmpstr = myBitMap.GetBitmapBits(True)
-    #converting bmp to PIL image
-    screenImg = Image.frombuffer(
-        'RGB',
-        (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-        bmpstr, 'raw', 'BGRX', 0, 1)
-    #removes window border if not in fullscreen
-    screenImg = screenImg.crop((clientOrigin[0] - windowRect[0], clientOrigin[1] - windowRect[1], clientRect[2] + (clientOrigin[0] - windowRect[0]), clientRect[3] + (clientOrigin[1] - windowRect[1])))
-    width, height = screenImg.size
-    #crop the bottom right quarter of the screen
-    screenImg = screenImg.crop((int(width*left), int(height*top), width*right, height*bottom))
-    return screenImg
+def getGameScreenImg(hwnd):
+    try:
+        # http://stackoverflow.com/questions/3260559/how-to-get-a-window-or-fullscreen-screenshot-in-python-3k-without-pil
+        clientOrigin = win32gui.ClientToScreen(hwnd, (0, 0))
+        windowRect = win32gui.GetWindowRect(hwnd)
+        clientRect = win32gui.GetClientRect(hwnd)
+        l,t,r,b=win32gui.GetWindowRect(hwnd)
+        h=b-t
+        w=r-l
+        hDC = win32gui.GetWindowDC(hwnd)
+        myDC=win32ui.CreateDCFromHandle(hDC)
+        newDC=myDC.CreateCompatibleDC()
+        
+        myBitMap = win32ui.CreateBitmap()
+        myBitMap.CreateCompatibleBitmap(myDC, w, h)
+        
+        newDC.SelectObject(myBitMap)
+        
+        newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
+        myBitMap.Paint(newDC)
+        bmpinfo = myBitMap.GetInfo()
+        bmpstr = myBitMap.GetBitmapBits(True)
+        #converting bmp to PIL image
+        screenImg = Image.frombuffer(
+            'RGB',
+            (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+            bmpstr, 'raw', 'BGRX', 0, 1)
+        #removes window border if not in fullscreen
+        screenImg = screenImg.crop((clientOrigin[0] - windowRect[0], clientOrigin[1] - windowRect[1], clientRect[2] + (clientOrigin[0] - windowRect[0]), clientRect[3] + (clientOrigin[1] - windowRect[1])))
+        width, height = screenImg.size
+        #crop the bottom right quarter of the screen
+        screenImg = screenImg.crop((int(width * 0.5), int(height * 0.5), width, height))
+        return screenImg
+    except Exception as err:
+        logging.error('Error while attempting to capture game screen')
+        raise err
     
 def convertToOpenCV(pilImage):
-    return np.array(pilImage.convert('HSV')).astype(np.uint8)
+    try:
+        return np.array(pilImage.convert('HSV')).astype(np.uint8)
+    except Exception as err:
+        logging.error('Error while attempting to pil image to open cv image')
+        raise err
 
 def getContours(image, limits):
-    shapeMask = cv2.inRange(image, limits[0], limits[1])
-    im, cnts, _ = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
-    cv2.CHAIN_APPROX_SIMPLE)
-    return cnts
+    try:
+        shapeMask = cv2.inRange(image, limits[0], limits[1])
+        (cnts, _) = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE)
+        return cnts
+    except Exception as err:
+        logging.error('Error while attempting to get contours of image %s with limits %s', image, limits)
     
 def calcCoords(bbox):
-    x0, y0 = bbox[0], bbox[1]
-    x1 = bbox[0] + bbox[2]
-    y1 = bbox[1] + bbox[3]
-    return x0, y0, x1, y1
+    try:
+        x0, y0 = bbox[0], bbox[1]
+        x1 = bbox[0] + bbox[2]
+        y1 = bbox[1] + bbox[3]
+        return x0, y0, x1, y1
+    except Exception as err:
+        logger.error('Error calculating coordinates from bounding box: %s', bbox)
+        raise err
         
 class BarDetector:
     #Limits in HSV credits to @Shantidly
@@ -80,11 +86,16 @@ class BarDetector:
         self.currentBarBoundingBoxes = [(0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)]
         #attempt to read any preexisting calibration
         if os.path.exists('conf.json'):
-            with open('conf.json') as dataFile:
-                conf = json.load(dataFile)
-                self.calibratedBoundingBoxes = conf['calibratedBoundingBoxes']
-                self.calibrationBarDimensions =  conf['calibrationBarDimensions']
-                self.calibrated = True
+            try:
+                with open('conf.json') as dataFile:
+                    conf = json.load(dataFile)
+                    self.calibratedBoundingBoxes = conf['calibratedBoundingBoxes']
+                    self.calibrationBarDimensions =  conf['calibrationBarDimensions']
+                    self.calibrated = True    
+            except Exception as err:
+                logging.error(err)
+                logging.warning('Could not properly read calibration configuration file. Deleting existing file')
+                os.remove('conf.json')
     
     #Only call once it is already calibrated
     def getStats(self, rustWindow):
@@ -96,19 +107,19 @@ class BarDetector:
         thirst = int(round(float(self.currentBarBoundingBoxes[1][2]) / self.calibrationBarDimensions[0] * 100))
         hunger = int(round(float(self.currentBarBoundingBoxes[2][2]) / self.calibrationBarDimensions[0] * 100))
         if health > 100 or health < 0:
-            print 'Warning: Health is measured to be greater than 100 or less than 0, recalibrate if necessary'
+            logger.warning('Health is measured to be greater than 100 or less than 0, recalibrate if necessary')
             if health < 0:
                 health = 0
             elif health > 100:
                 health = 100
         if thirst > 100 or thirst < 0:
-            print 'Warning: Thirst is measured to be greater than 100 or less than 0, recalibrate if necessary'
+            logger.warning('Warning: Thirst is measured to be greater than 100 or less than 0, recalibrate if necessary')
             if thirst < 0:
                 thirst = 0
             elif thirst > 100:
                 thirst = 100
         if hunger > 100 or hunger < 0:
-            print 'Warning: Hunger is measured to be greater than 100 or less than 0, recalibrate if necessary'
+            logger.warning('Warning: Hunger is measured to be greater than 100 or less than 0, recalibrate if necessary')
             if hunger < 0:
                 hunger = 0
             elif hunger > 100:
@@ -122,7 +133,8 @@ class BarDetector:
         if len(currentHP) == 0 or len(currentThirst) == 0 or len(currentHunger) == 0:
             return
         currentHP, currentThirst, currentHunger = int(currentHP), int(currentThirst), int(currentHunger)
-        screenImg = convertToOpenCV((getGameScreenImg(rustWindow, 0.5, 0.5, 1.0, 1.0)))
+        win32gui.SetForegroundWindow(rustWindow)
+        screenImg = convertToOpenCV((getGameScreenImg(rustWindow)))
         self.approximateBoundingBoxes(self.getBarContours(screenImg))
         #Estimates the length of a full bar if currentHP != 100, if it does then
         #the length measured from detection is accurate
@@ -161,7 +173,7 @@ class BarDetector:
     #Assuming detection has already been properly calibrated, we only have to look in the
     #bounding box
     def findBarBoundingBoxes(self, rustWindow):
-        screenImg = getGameScreenImg(rustWindow, 0.5, 0.5, 1.0, 1.0)
+        screenImg = getGameScreenImg(rustWindow)
         self.hpBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[0]))
         self.thirstBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[1]))
         self.hungerBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[2]))
@@ -178,29 +190,35 @@ class BarDetector:
             self.currentBarBoundingBoxes[1] = cv2.boundingRect(thirstContours[0])
             self.currentBarBoundingBoxes[2] = cv2.boundingRect(hungerContours[0])
         except IndexError:
+            logging.warning('resetting bounding boxes')
+            logging.error(IndexError)
             self.currentBarBoundingBoxes = [(0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)]
             
     def approximateBoundingBoxes(self, barContours):
-        #Approximate bounding boxes by using the following ruleset:
-        #Hunger bar does not have as many similarly saturated images in the screen
-        #as thirst/hp. Assuming we have found it, then because the hp and thirst bars
-        #are similar in height, we can narrow down the potential detected contours
-        
+        #tries to find the bars with these assumptions:
+        #The thirst bar is the easiest to detect as there are no other bars on the
+        #screen that are very similar in color or saturation.
+        #testing has shown that the ground is detected when using the hunger bar limits
+        #and the HP bar shares limits with the building privelege bar and tool durability bars
+        #All bars are always uniform in height, and there is should be no other object that has the
+        #same height as the bars. Therefore, if the thirst bar is accurately determined, there is
+        #a high probability that a detected contour with similar height to the thirst bar is
+        #the hp/hunger bar
         hpContours, thirstContours, hungerContours = barContours
         self.calibratedBoundingBoxes = [(0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)]
-        #approximate hunger bar
+        #approximate thirst bar
         if len(hungerContours) == 0:
-            print "No contour found for hunger bar while approximating, aborting approximation"
+            logging.warning('No contour found for hunger bar while approximating, aborting approximation')
             return
         for cnt in hungerContours:
-            #hunger bar is a rectangle, len(approx) is the number of edges
+            #thirst bar is a rectangle, len(approx) is the number of edges
             approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
             if len(approx) == 4:
                 self.calibratedBoundingBoxes[2] = cv2.boundingRect(cnt)
                 self.calibrationBarDimensions[1] = self.calibratedBoundingBoxes[2][3]
                 self.lower, self.upper = self.calibrationBarDimensions[1] - self.tolerance, self.calibrationBarDimensions[1] + self.tolerance
-
-        #approximate thirst bar
+        #approximate hunger bar. If no bar similar in height to thirst bar is found, take the 
+        #first detected contour
         try:
             foundBar = False
             for cnt in thirstContours:
@@ -211,9 +229,11 @@ class BarDetector:
             if foundBar == False:
                 self.calibratedBoundingBoxes[1] = cv2.boundingRect(thirstContours[0])
         except IndexError:
-            print "No contour found for thirst bar"
+            logging.warning('No contour found for thirst bar')
+            logging.error(IndexError)
             self.calibratedBoundingBoxes[1] = (0, 0, 0, 0)
-        #approximate hp bar
+        #approximate health bar, If no bar similar in height to thirst bar is found, either take the
+        #second largest contour in area (e.g. building privilege bar is detected) or the first detected bar
         try:
             foundBar = False
             for cnt in hpContours:
@@ -222,7 +242,6 @@ class BarDetector:
                     self.calibratedBoundingBoxes[0] = rect
                     foundBar = True
             if foundBar == False:
-                #hp bar will be the second largest bar is building priv bar on screen
                 hpAreaTuples = []
                 for cnt in hpContours:
                     hpAreaTuples.append((cnt, cv2.contourArea(cnt)))
@@ -234,98 +253,9 @@ class BarDetector:
                 else:
                     self.calibratedBoundingBoxes[0] = cv2.boundingRect(hpAreaTuples[0][0])
         except IndexError:
-            print "No contour found for hunger bar"
+            logging.warning('No contour found for hunger bar')
             self.calibratedBoundingBoxes[0] = (0, 0, 0, 0)
     
     def getBarContours(self, image):
         return (getContours(image, self.hpLimits), getContours(image, self.thirstLimits), getContours(image, self.hungerLimits))
-        
-class ActionBarDetector:
-
-    # TODO:
-    #
-    #   - Get images for all weapons in the game
-    #   - Find a solution for other resolutions than 64x64 of action bar slots
-    #
-    # Example usage:
-    #
-    # abd = ActionBarDetector()
-    # rustWindow = win32gui.FindWindow(None, 'Rust')
-    # abs = abd.getActionBarSlots(rustWindow)
-    # for slot in abs:
-    #      if MatchImage('bolt.jpg',0.3,slot):
-    #           stats['bolt'] = True
-    # 
-    # and so on.
-    #
-    # Against a reasonably uniform background (rocks, sand, etc.) the templates are matched
-    # to a certainty between 0.3 and 0.5. This ~should~ be enough to differentiate every item.
-    # The only way to be sure is to go through and hand test each one. So far bolt and AK have
-    # passed my tests, although both will fail against a very complicated background, (barbed wire,
-    # etc.). The bolt has been the hardest template to match in the past, so this makes me cofident
-    # this iteration is pretty solid.
-     
-    durabilityLimits = [np.array([50, 100, 100]), np.array([65, 255, 255])] # HSV boundaries
     
-    # Matches supplied template, with name imagename, on image, img, and returns true
-    # if template is matched with a confidence value greater than the threshold.
-    def MatchImage(self, imagename, threshold, img):
-    
-        # Apply canny edge detecting algorithm to image and template
-        # this makes image recognition a lot easier with a noisy background on image
-        # and a white background on the template
-    
-        cannythresh1 = 100
-        cannythresh2 = 200
-        templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
-        templ_edge = cv2.Canny(templ,cannythresh1, cannythresh2)
-        img_edge = cv2.Canny(img,cannythresh1,  cannythresh2)
-        method = eval('cv2.TM_CCOEFF_NORMED')
-        
-        res = cv2.matchTemplate(img_edge, templ_edge, method)
-        
-        #w,h=cv2.cvtColor(templ,cv2.COLOR_BGR2GRAY).shape[::-1]
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-        
-        #cv2.rectangle(img, max_loc,(max_loc[0]+w,max_loc[1]+h),255,2)
-        
-        if max_val > threshold:
-            return True
-        else:
-            return False
-        
-    def getDurabilityContours(self, image):
-        return getContours(image, self.durabilityLimits)
-
-    def getActionBarSlots(self, rustWindow):
-    
-        # Tries to find the action bar slots with these assumptions:
-        #
-        # The durability bar is the thinnest bar matching this color contour
-        # All bars are always uniform in width
-        # Durability bars are 1/15th the width of the action bar slot
-        
-        # Returns images of the action bar slots
-        
-        img = convertToOpenCV((getGameScreenImg(rustWindow, 0.25, 0.75, 0.75, 1.0)))
-        durabilityContours = self.getDurabilityContours(img)
-        durabilityBarBoundingBoxes = []
-        actionBarSlotBoundingBoxes = []
-        actionBarSlotImages = []
-        
-        for cnt in durabilityContours:
-            #thirst bar is a rectangle, len(approx) is the number of edges
-            approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
-            if len(approx) >= 3:
-                durabilityBarBoundingBoxes.append(cv2.boundingRect(cnt))
-                
-        for box in durabilityBarBoundingBoxes:
-            y1 = ((box[1]+box[3])-box[2]*15)
-            y2 = (box[1]+box[3])
-            x1 = box[0]
-            x2 = x1+box[2]*15
-            actionBarSlotImages.append(img[y1:y2,x1:x2])
-            
-        return actionBarSlotImages
-            
-        
