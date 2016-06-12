@@ -5,7 +5,7 @@ import os, win32gui, win32ui, win32con, cv2, time, math, json, logging
 def getKey(item):
     return item[1]
 
-def getGameScreenImg(hwnd):
+def getGameScreenImg(hwnd,left,top,right,bottom):
     try:
         # http://stackoverflow.com/questions/3260559/how-to-get-a-window-or-fullscreen-screenshot-in-python-3k-without-pil
         clientOrigin = win32gui.ClientToScreen(hwnd, (0, 0))
@@ -36,7 +36,7 @@ def getGameScreenImg(hwnd):
         screenImg = screenImg.crop((clientOrigin[0] - windowRect[0], clientOrigin[1] - windowRect[1], clientRect[2] + (clientOrigin[0] - windowRect[0]), clientRect[3] + (clientOrigin[1] - windowRect[1])))
         width, height = screenImg.size
         #crop the bottom right quarter of the screen
-        screenImg = screenImg.crop((int(width * 0.5), int(height * 0.5), width, height))
+        screenImg = screenImg.crop((int(width * left), int(height * top), int(width * right), int(height*bottom)))
         return screenImg
     except Exception as err:
         logging.error('Error while attempting to capture game screen')
@@ -134,7 +134,7 @@ class BarDetector:
             return
         currentHP, currentThirst, currentHunger = int(currentHP), int(currentThirst), int(currentHunger)
         win32gui.SetForegroundWindow(rustWindow)
-        screenImg = convertToOpenCV((getGameScreenImg(rustWindow)))
+        screenImg = convertToOpenCV((getGameScreenImg(rustWindow,0.5,0.5,1.0,1.0)))
         self.approximateBoundingBoxes(self.getBarContours(screenImg))
         #Estimates the length of a full bar if currentHP != 100, if it does then
         #the length measured from detection is accurate
@@ -173,7 +173,7 @@ class BarDetector:
     #Assuming detection has already been properly calibrated, we only have to look in the
     #bounding box
     def findBarBoundingBoxes(self, rustWindow):
-        screenImg = getGameScreenImg(rustWindow)
+        screenImg = getGameScreenImg(rustWindow,0.5,0.5,1.0,1.0)
         self.hpBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[0]))
         self.thirstBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[1]))
         self.hungerBarImg = screenImg.crop(calcCoords(self.calibratedBoundingBoxes[2]))

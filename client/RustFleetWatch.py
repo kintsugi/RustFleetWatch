@@ -3,6 +3,7 @@ from mtTkinter import *
 import tkMessageBox
 from PIL import ImageTk
 from BarDetector import BarDetector
+#from ActionBarDetector import ActionBarDetector
 from socketIO_client import SocketIO, LoggingNamespace
 import logging
 logging.basicConfig(filename='log.txt', level=logging.INFO, 
@@ -81,6 +82,7 @@ class App:
         
 
         self.barDetector = BarDetector()
+        #self.actionBarDetector = ActionBarDetector()
         if self.barDetector.calibrated:
             self.confLoadedLabel = Label(self.root, text="Previous Calibration Loaded")
             self.confLoadedLabel.pack()
@@ -100,6 +102,8 @@ class App:
             self.hungerPanel.pack()
             self.hungerText = Label(self.root, text="Hunger")
             self.hungerText.pack()
+            #self.actionBarPanel = Label(self.root, image = None)
+            #self.actionBarPanel.pack()
         self.root.after(self.delay(), self.loop)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
         self.root.mainloop()
@@ -118,6 +122,7 @@ class App:
             rustWindow = win32gui.GetForegroundWindow()
             if win32gui.GetWindowText(rustWindow) == 'Rust' and self.barDetector.calibrated and self.socketIO.connected:
                 stats = self.barDetector.getStats(rustWindow)
+                #self.actionBarDetector.getActionBarSlots(rustWindow)
                 def showBar(value, barImage, imgPanel, textPanel, textPrefix):
                     uiImage = ImageTk.PhotoImage(barImage)
                     imgPanel.configure(image = uiImage)
@@ -128,6 +133,7 @@ class App:
                     showBar(stats['health'], self.barDetector.hpBarImg, self.hpPanel, self.hpText, "HP: ")
                     showBar(stats['thirst'], self.barDetector.thirstBarImg, self.thirstPanel, self.thirstText, "Thirst: ")
                     showBar(stats['hunger'], self.barDetector.hungerBarImg, self.hungerPanel, self.hungerText, "Hunger: ")
+                    #showBar('Actionbar', np.concatenate(self.actionBarDetector.actionBarSlotImages, axis=1), self.actionBarPanel, None, "Actionbar: ")
                 self.generatePayload(stats)
         except Exception as err:
             logger.error(err)

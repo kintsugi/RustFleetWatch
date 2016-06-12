@@ -89,6 +89,6 @@ class ActionBarDetector:
             x2 = x1+box[2]*15
             actionBarSlotImages.append(img[y1:y2,x1:x2])
             
-        return actionBarSlotImages
+        self.actionBarSlotImages = actionBarSlotImages
             
         
