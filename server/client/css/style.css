@@ -1,0 +1,83 @@
+body {
+    padding-top: 70px; /* Required padding for .navbar-fixed-top. Change if height of navigation changes. */
+}
+
+footer {
+    margin: 50px 0;
+}
+
+.content-container {
+  width: 95%
+}
+
+.bar-text {
+   position: absolute; 
+   margin: auto;
+   top: 0; right: 0;
+   width: 100%;
+   padding-top: 6px;
+   text-align: center;
+   color: white;
+   
+}
+.img-container {
+  display: inline-block;
+  float: left;
+  position:relative;
+  width: 100%;
+}
+
+.bar {
+  width: 100%;
+  height: 32px;
+}
+
+.bar-background {
+  clear: both;
+  background: rgba(0,0,0,0.7);
+  height: 42px;
+  padding: 5px;
+}
+
+.bar-space {
+  padding: 3px;
+}
+
+.bar-icon {
+  display: inline-block;
+  position: relative;
+  float: left;
+  width: 10%;
+  height: 32px;
+}
+
+.user-stats {
+  border: 1px solid #eee;
+  padding: 5px;
+  margin: 1px
+}
+
+.user-title {
+  margin-top: 0px
+}
+
+.multi-user {
+  border-right: 0px;
+}
+
+.user-container {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
+.subtle-input {
+  border-width: 0px;
+}

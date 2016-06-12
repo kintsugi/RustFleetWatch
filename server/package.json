@@ -8,6 +8,8 @@
   "dependencies": {
     "compression": "^1.0.3",
     "cors": "^2.5.2",
+    "gulp": "^3.9.1",
+    "gulp-nodemon": "^2.0.7",
     "loopback": "^2.22.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^2.1.0",
