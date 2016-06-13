@@ -3,7 +3,7 @@ var Promise = require('promise');
 
 var self = {
   processRequest: function(app, msg) {
-    self.authenticate(app, msg).done(function() {
+    self.authenticate(app, msg).done(function(token) {
       if(msg.event)
           socketEvents[msg.event](app, msg)
       else 
@@ -17,13 +17,18 @@ var self = {
     return new Promise(function(fulfill, reject) {
       if(!msg.token.userId || !msg.token.id)
         reject(new Error('Message has no token:' + msg))
-      app.models.User.confirm(msg.token.userId, msg.token, null, function(err) {
-        if(err)
-          reject(err)
-        fulfill()
-      })
-    });
 
+      app.models.AccessToken.findOne({
+        where: {
+          id: msg.token.id,
+          userId: msg.token.userId,
+        } 
+      }, function(err, token) {
+        if(err)
+          reject(err);
+        fulfill(token);
+      });
+    });
   }
 }
 

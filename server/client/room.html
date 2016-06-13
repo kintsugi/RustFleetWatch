@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Rust Fleet Watchlist</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+
+    <!--jQuery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+
+    <!--Bootstrap Core JavaScript-->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/rooms.js"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Rust Fleet Watchlist</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="#">Download Client</a>
+            </li>
+            <li>
+              <a href="https://github.com/terminull/RustFleetWatch">GitHub</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+
+    <!--Page Content-->
+    <div class="container content-container">
+
+      <!--Link Row-->
+      <div class="row">
+        <div class="col-xs-2">
+          <button type="button" class="btn btn-danger" data-toggle="collapse" data-target="#leader-link">Show Leader Link</button>
+          <div id="leader-link" class="alert alert-danger collapse" role="alert">
+            a1b2c3d4
+            <br><strong>This is your key to the room.</strong>
+          </div>
+        </div>
+        <div class="col-xs-2">
+          <button type="button" class="btn btn-warning" data-toggle="collapse" data-target="#join-link">Show Join Link</button>
+          <div id="join-link" class="alert alert-warning collapse" role="alert">
+            a1b2c3d4
+            <br><strong>Share this with those you are playing with.</strong>
+          </div>
+        </div>
+      </div>
+      <!--./Link Row-->
+
+      <div class="row">
+        <div class="col-lg-12">
+          <h1 class="page-header">
+            <button class="btn btn-default collapse-btn" type="button" data-toggle="collapse" data-target="#squad_1" aria-expanded="true" aria-controls="Collapse Squad">
+              <span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span>
+            </button>
+            <input type="text" class="subtle-input" value="Alpha Squad">
+            <span style="font-size: 20px" class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+          </h1>
+        </div>
+      </div>
+
+      <!--Squad-->
+      <div id="squad_1" class="collapse in">
+        <!--Leader Row-->
+        <div class="row">
+          <!--Leader Container-->
+          <div class="leader-container">
+            <div class="col-xs-4"></div>
+
+            <!--Leader Stats-->
+            <div id="leader-stats" class="col-xs-4 user-stats">
+
+              <h3 class="user-title">Username
+                <span style="font-size: 20px" class="glyphicon glyphicon-star-empty" aria-hidden="true"></span>
+              </h3>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/hp.png" class="hp bar"/>
+                  <div class="bar-text">100</div>
+                </div>
+              </div>
+
+              <div class="bar-space"></div>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/thirst.png" class="thirst bar"/>
+                  <div class="bar-text">250</div>
+                </div>
+              </div>
+
+              <div class="bar-space"></div>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/hunger.png" class="hunger bar"/>
+                  <div class="bar-text">500</div>
+                </div>
+              </div>
+
+            </div>
+            <!--./Leader Stats-->
+
+          </div>
+          <!--./Leader Container-->
+            
+          <div class="col-xs-4"></div>
+        
+        </div>
+        <!--./Leader Row-->
+
+
+        <!--Line Members Row-->
+        <div id="lineMembers" class="row squad_1">
+          <!--Line Member Stats-->
+          <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2 user-container">
+            <div class="user-stats">
+
+              <h3 class="user-title left">Username</h3>
+              <div class="dropdown right">
+                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                  <li><a href="#">Kick</a></li>
+                  <li><a href="#">Kickban</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li><a href="#">Promote to Leader</a></li>
+                </ul>
+              </div>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/hp.png" class="hp bar"/>
+                  <div class="bar-text">100</div>
+                </div>
+              </div>
+
+              <div class="bar-space"></div>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/thirst.png" class="thirst bar"/>
+                  <div class="bar-text">250</div>
+                </div>
+              </div>
+
+              <div class="bar-space"></div>
+
+              <div class="bar-background">
+                <div class="img-container">
+                  <img src="imgs/hunger.png" class="hunger bar"/>
+                  <div class="bar-text">500</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!--./Line Member Stats-->
+        </div>
+        <!--./Line Members Row-->
+
+      </div>
+      <!--./Squad-->
+
+      <hr>
+
+      <div class="row">
+        <div class="col-lg-12">
+          <button class="btn btn-default" type="button" aria-expanded="true" aria-controls="Collapse Squad">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+      
+      <!--Footer-->
+      <footer>
+        <div class="row">
+          <div class="col-lg-12">
+          </div>
+        </div>
+      </footer>
+      <!--./Footer-->
+
+    </div>
+    <!--/.Page Content-->
+
+  </body>
+
+</html>

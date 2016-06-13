@@ -31,5 +31,13 @@
   "Role": {
     "dataSource": "db",
     "public": false
+  },
+  "Room": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Player": {
+    "dataSource": "db",
+    "public": true
   }
 }
