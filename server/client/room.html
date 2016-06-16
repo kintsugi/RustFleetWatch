@@ -20,6 +20,12 @@
     <!--jQuery-->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
 
+    <!--PromiseJS-->
+    <script src="https://www.promisejs.org/polyfills/promise-done-7.0.4.min.js"></script>
+
+    <!--SocketIO-->
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+
     <!--Bootstrap Core JavaScript-->
     <script src="js/bootstrap.min.js"></script>
     <script src="js/rooms.js"></script>
@@ -68,18 +74,18 @@
     <div class="container content-container">
 
       <!--Link Row-->
-      <div class="row">
+      <div id="link-row" class="row">
         <div class="col-xs-2">
-          <button type="button" class="btn btn-danger" data-toggle="collapse" data-target="#leader-link">Show Leader Link</button>
-          <div id="leader-link" class="alert alert-danger collapse" role="alert">
-            a1b2c3d4
+          <button type="button" class="btn btn-danger" data-toggle="collapse" data-target="#leader-link-container">Show Leader Link</button>
+          <div id="leader-link-container" class="alert alert-danger collapse" role="alert">
+            <span id="leader-link">a1b2c3d4</span>
             <br><strong>This is your key to the room.</strong>
           </div>
         </div>
         <div class="col-xs-2">
-          <button type="button" class="btn btn-warning" data-toggle="collapse" data-target="#join-link">Show Join Link</button>
-          <div id="join-link" class="alert alert-warning collapse" role="alert">
-            a1b2c3d4
+          <button type="button" class="btn btn-warning" data-toggle="collapse" data-target="#join-link-container">Show Join Link</button>
+          <div id="join-link-container" class="alert alert-warning collapse" role="alert">
+            <span id="join-link">a1b2c3d4</span>
             <br><strong>Share this with those you are playing with.</strong>
           </div>
         </div>
@@ -101,15 +107,14 @@
       <!--Squad-->
       <div id="squad_1" class="collapse in">
         <!--Leader Row-->
-        <div class="row">
+        <div id="leader" class="row">
           <!--Leader Container-->
-          <div class="leader-container">
-            <div class="col-xs-4"></div>
-
+          <div id="leader-template" class="leader-container col-xs-4 col-xs-offset-4">
             <!--Leader Stats-->
-            <div id="leader-stats" class="col-xs-4 user-stats">
+            <div id="leader-stats" class=" user-stats">
 
-              <h3 class="user-title">Username
+              <h3 class="user-title">
+                <span class="username">Username</span>
                 <span style="font-size: 20px" class="glyphicon glyphicon-star-empty" aria-hidden="true"></span>
               </h3>
 
@@ -144,19 +149,17 @@
           </div>
           <!--./Leader Container-->
             
-          <div class="col-xs-4"></div>
-        
         </div>
         <!--./Leader Row-->
 
 
         <!--Line Members Row-->
-        <div id="lineMembers" class="row squad_1">
+        <div id="line-members" class="row squad_1">
           <!--Line Member Stats-->
-          <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2 user-container">
+          <div id="member-template" class="col-xs-6 col-sm-4 col-md-3 col-lg-2 user-container">
             <div class="user-stats">
 
-              <h3 class="user-title left">Username</h3>
+              <h3 class="user-title left"><span class"username">Username<span></h3>
               <div class="dropdown right">
                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                   <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
@@ -204,7 +207,7 @@
 
       <hr>
 
-      <div class="row">
+      <div id="add-squad" class="row">
         <div class="col-lg-12">
           <button class="btn btn-default" type="button" aria-expanded="true" aria-controls="Collapse Squad">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>

@@ -23,6 +23,8 @@ A room is a collection of squads. There is a short(6-8 characters) string that a
 ####Attributes
 
 * `link: String` url identifier for the room
+* `joinLink: String` Link given to room owner to distribute to friends to join with client
+* `leaderLink: String` Link given to room owner to use themselves to join with client
 
 ####Relations
 * A Room has many Squads

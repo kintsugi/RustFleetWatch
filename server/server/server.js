@@ -1,6 +1,7 @@
 var loopback = require('loopback');
 var boot = require('loopback-boot');
 var ioMiddleware = require('../socket-io_middleware.js')
+var socketEvents = require('../socket_events.js')
 
 var app = module.exports = loopback();
 
@@ -28,10 +29,17 @@ boot(app, __dirname, function(err) {
       app.io.on('connection', function(socket){
         socket.on('msg', function(msg){
           try {
-            ioMiddleware.processRequest(app, msg);
+            ioMiddleware.processRequest(app, msg, socket);
           } catch(e) {
             console.log(e)
           }
         });
+        socket.on('disconnect', function() {
+          try {
+            socketEvents.disconnect(app, socket);
+          } catch(e) {
+            console.log(e)
+          }
+        })
       });
 });

@@ -6,13 +6,53 @@
   "options": {
     "validateUpsert": true
   },
+  "hidden": [
+    "joinLink",
+    "leaderLink"
+  ],
   "properties": {
     "name": {
+      "type": "string",
+      "default": "Unnamed Room"
+    },
+    "link": {
+      "type": "string"
+    },
+    "joinLink": {
+      "type": "string"
+    },
+    "leaderLink": {
       "type": "string"
     }
   },
   "validations": [],
-  "relations": {},
-  "acls": [],
+  "relations": {
+    "player": {
+      "type": "belongsTo",
+      "model": "Player",
+      "foreignKey": ""
+    },
+    "clients": {
+      "type": "hasMany",
+      "model": "client",
+      "foreignKey": ""
+    }
+  },
+  "acls": [
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY",
+      "property": "links"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "$owner",
+      "permission": "ALLOW",
+      "property": "links"
+    }
+  ],
   "methods": {}
 }
