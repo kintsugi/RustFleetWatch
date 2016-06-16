@@ -52,7 +52,7 @@ def convertToOpenCV(pilImage):
 def getContours(image, limits):
     try:
         shapeMask = cv2.inRange(image, limits[0], limits[1])
-        (cnts, _) = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
+        (im,cnts, _) = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE)
         return cnts
     except Exception as err:

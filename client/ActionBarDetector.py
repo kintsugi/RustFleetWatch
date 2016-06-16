@@ -1,7 +1,7 @@
 import numpy as np 
-import os, win32gui, win32ui, win32con, cv2, time, math, json
+import os, win32gui, win32ui, win32con, cv2, time, math, logging
 from PIL import Image
-import BarDetector
+from BarDetector import *
 
 class ActionBarDetector:
 
@@ -29,6 +29,7 @@ class ActionBarDetector:
     # this iteration is pretty solid.
      
     durabilityLimits = [np.array([50, 100, 100]), np.array([65, 255, 255])] # HSV boundaries
+    durabilityBarBoundingBoxes = []
     
     # Matches supplied template, with name imagename, on image, img, and returns true
     # if template is matched with a confidence value greater than the threshold.
@@ -37,13 +38,13 @@ class ActionBarDetector:
         # Apply canny edge detecting algorithm to image and template
         # this makes image recognition a lot easier with a noisy background on image
         # and a white background on the template
-    
-        cannythresh1 = 100
-        cannythresh2 = 200
+
+        cannythresh1 = 200
+        cannythresh2 = 250
         templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
         templ_edge = cv2.Canny(templ,cannythresh1, cannythresh2)
-        img_edge = cv2.Canny(img,cannythresh1,  cannythresh2)
-        method = eval('cv2.TM_CCOEFF_NORMED')
+        img_edge = cv2.Canny(img,100,  150)
+        method = eval('cv2.TM_CCOEFF')
         
         res = cv2.matchTemplate(img_edge, templ_edge, method)
         
@@ -60,7 +61,7 @@ class ActionBarDetector:
     def getDurabilityContours(self, image):
         return getContours(image, self.durabilityLimits)
 
-    def getActionBarSlots(self, rustWindow):
+    def getActionBarSlotBoundingBoxes(self, rustWindow):
     
         # Tries to find the action bar slots with these assumptions:
         #
@@ -72,23 +73,33 @@ class ActionBarDetector:
         
         img = convertToOpenCV((getGameScreenImg(rustWindow, 0.25, 0.75, 0.75, 1.0)))
         durabilityContours = self.getDurabilityContours(img)
-        durabilityBarBoundingBoxes = []
+        self.durabilityBarBoundingBoxes = []
         actionBarSlotBoundingBoxes = []
+ 
+        try:
+            for cnt in durabilityContours:
+                #thirst bar is a rectangle, len(approx) is the number of edges
+                approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
+                if len(approx) >= 3:
+                    self.durabilityBarBoundingBoxes.append(cv2.boundingRect(cnt))
+        except IndexError:
+            logging.warning('no durability bounding boxes found')
+            logging.error(IndexError)
+            self.durabilityBarBoundingBoxes = []
+
+    def getActionBarSlotImages(self, rustWindow):
+        img = cv2.cvtColor(convertToOpenCV((getGameScreenImg(rustWindow, 0.25, 0.75, 0.75, 1.0))), cv2.COLOR_HSV2BGR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         actionBarSlotImages = []
-        
-        for cnt in durabilityContours:
-            #thirst bar is a rectangle, len(approx) is the number of edges
-            approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt,True),True)
-            if len(approx) >= 3:
-                durabilityBarBoundingBoxes.append(cv2.boundingRect(cnt))
-                
-        for box in durabilityBarBoundingBoxes:
+
+        for box in self.durabilityBarBoundingBoxes:
             y1 = ((box[1]+box[3])-box[2]*15)
             y2 = (box[1]+box[3])
-            x1 = box[0]
+            x1 = box[0]+box[2]
             x2 = x1+box[2]*15
             actionBarSlotImages.append(img[y1:y2,x1:x2])
             
         self.actionBarSlotImages = actionBarSlotImages
+        #self.actionBarSlotImagesPIL = Image.fromarray(np.concatenate(self.actionBarSlotImages, axis=1))
             
         
