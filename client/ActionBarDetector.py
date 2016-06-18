@@ -1,5 +1,5 @@
 import numpy as np 
-import os, win32gui, win32ui, win32con, cv2, time, math, logging
+import os, win32gui, win32ui, win32con, cv2, time, math, logging, collections
 from PIL import Image
 from BarDetector import *
 
@@ -7,43 +7,48 @@ class ActionBarDetector:
 
     # TODO:
     #
-    #   - Get images for all weapons in the game
+    #   - Get images for all items with durability in the game
+    #       - I can write a tool to do this automatically in 10 minutes on a sandbox server
+    #         if I stop being a lazy shit
     #   - Find a solution for other resolutions than 64x64 of action bar slots
+    #       - My thoughts on this are using the width of the action bar slot (which we
+    #         can obtain using the width of the durability contour) scale up the template
+    #         being matched by 64/slotsize (as all images I plan on taking at 64x64 slot size)
+    
+    # USAGE:    
     #
-    # Example usage:
+    #   - Usage is as simple as:
     #
-    # abd = ActionBarDetector()
-    # rustWindow = win32gui.FindWindow(None, 'Rust')
-    # abs = abd.getActionBarSlots(rustWindow)
-    # for slot in abs:
-    #      if MatchImage('bolt.jpg',0.3,slot):
-    #           stats['bolt'] = True
-    # 
-    # and so on.
+    #       abd = ActionBarDetector()
+    #       items = abd.getMatches()
     #
-    # Against a reasonably uniform background (rocks, sand, etc.) the templates are matched
-    # to a certainty between 0.3 and 0.5. This ~should~ be enough to differentiate every item.
-    # The only way to be sure is to go through and hand test each one. So far bolt and AK have
-    # passed my tests, although both will fail against a very complicated background, (barbed wire,
-    # etc.). The bolt has been the hardest template to match in the past, so this makes me cofident
-    # this iteration is pretty solid.
-     
+    #     which sets items to be a list containing tuples for each item with the first value being the name of
+    #     the item in the bar e.g.
+    #
+    #     [('bolt', 8275823.0), ('ak', 98029345.0)]
+
+    TEMPLATES = {"bolt" : "images/bolt.jpg",
+                 "AK"   : "images/AK.jpg"
+    } # etc, need to add all items with durability bars
+
     durabilityLimits = [np.array([50, 100, 100]), np.array([65, 255, 255])] # HSV boundaries
     durabilityBarBoundingBoxes = []
     
     # Matches supplied template, with name imagename, on image, img, and returns true
     # if template is matched with a confidence value greater than the threshold.
-    def MatchImage(self, imagename, threshold, img):
+    def MatchImage(self, imagename, img):
     
         # Apply canny edge detecting algorithm to image and template
         # this makes image recognition a lot easier with a noisy background on image
         # and a white background on the template
 
-        cannythresh1 = 200
-        cannythresh2 = 250
+        cannythresh1 = 130
+        cannythresh2 = 180
+
         templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
-        templ_edge = cv2.Canny(templ,cannythresh1, cannythresh2)
-        img_edge = cv2.Canny(img,100,  150)
+        templ_edge = cv2.Canny(templ,cannythresh1,cannythresh2)
+        img_edge = cv2.Canny(img,cannythresh1,cannythresh2)
+
         method = eval('cv2.TM_CCOEFF')
         
         res = cv2.matchTemplate(img_edge, templ_edge, method)
@@ -52,11 +57,7 @@ class ActionBarDetector:
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         
         #cv2.rectangle(img, max_loc,(max_loc[0]+w,max_loc[1]+h),255,2)
-        
-        if max_val > threshold:
-            return True
-        else:
-            return False
+        return max_val
         
     def getDurabilityContours(self, image):
         return getContours(image, self.durabilityLimits)
@@ -99,7 +100,41 @@ class ActionBarDetector:
             x2 = x1+box[2]*15
             actionBarSlotImages.append(img[y1:y2,x1:x2])
             
-        self.actionBarSlotImages = actionBarSlotImages
-        #self.actionBarSlotImagesPIL = Image.fromarray(np.concatenate(self.actionBarSlotImages, axis=1))
             
+        self.actionBarSlotImages = actionBarSlotImages
+        self.actionBarSlotNumber = len(actionBarSlotImages)
+        #self.actionBarSlotImagesPIL = Image.fromarray(np.concatenate(self.actionBarSlotImages, axis=1))
+
+    def getActionBarSlotImageCat(self):
+        return cv2.hconcat(self.actionBarSlotImages)
+    
+    # This is where the meme dream occurs. Match every image with durability in game to concatenated slot images
+    # and return the n (n = self.actionBarSlotNumber) best matches. For the items we want to track (probably just
+    # guns) we can just check if the returned tuple contains the item.
+    #
+    # Returns a tuple of strings representing the detected items
+
+    def getMatches(self):
+        rustWindow = win32gui.FindWindow(None, 'Rust')
+
+        self.getActionBarSlotBoundingBoxes(rustWindow)
+        self.getActionBarSlotImages(rustWindow)
+        actionBar = self.getActionBarSlotImageCat()
+
+        b = 0
+        vals = {}
+        res = []
+
+        for k,v in self.TEMPLATES.iteritems():
+            a = self.MatchImage(v,actionBar)
+            vals[k] = a
+
+        vals_sorted = collections.OrderedDict(sorted(vals.items(), key=lambda t: t[1]))
         
+        for i in range(0,self.actionBarSlotNumber):
+            res.append(vals_sorted.popitem(last=True))
+
+        return res
+
+            
+

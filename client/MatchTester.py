@@ -19,12 +19,11 @@ class ActionBarDetectorTest(ActionBarDetector):
     ]
 
     WEAPONS = [
-        ("bolt", "bolt"),
-        ("AK", "AK"),
+        ("bolt", "images/bolt"),
+        ("AK", "images/AK"),
     ]
 
     def MatchImage(self, imagename, img):
-
         templ = cv2.imread(imagename, cv2.IMREAD_GRAYSCALE)
 
         if self.preproc.get() == 1:
@@ -38,7 +37,6 @@ class ActionBarDetectorTest(ActionBarDetector):
             templ = cv2.equalizeHist(templ)
 
         method = self.method.get()
-        
         res = cv2.matchTemplate(img, templ, method)
         
         #w,h=cv2.cvtColor(templ,cv2.COLOR_BGR2GRAY).shape[::-1]
@@ -114,6 +112,7 @@ class ActionBarDetectorTest(ActionBarDetector):
         # Min/Max Detection Value Output
 
         self.bt_eval = Button(self.root, text="Evaluate", command=self.evaluate)
+        self.bt_eval.pack()
 
         # -----------------------
 
@@ -124,18 +123,19 @@ class ActionBarDetectorTest(ActionBarDetector):
         self.getActionBarSlotBoundingBoxes(rustWindow)
         self.getActionBarSlotImages(rustWindow)
 
-        f = open("out.txt", "w")
+        f = open("out.txt", "a")
 
-        f.write("Preproc: {0}\n \
-                 Method: {1}\n ".format(self.preproc.get(), self.method.get()))
+        f.write("Preproc: {0}\nMethod: {1}\n ".format(self.preproc.get(), self.method.get()))
         
         i = 1
 
         for slot in self.actionBarSlotImages:
             f.write("---------- Slot {0} ----------\n".format(i))
             for wep in self.WEAPONS:
-                (min, max) = self.MatchImage(self.WEAPONS[wep]+'.jpg',slot)
+                (min, max) = self.MatchImage('{0}.jpg'.format(wep[1]),slot)
                 f.write("{0}: {1}, {2}\n".format(wep, min, max))
+
+            i+=1
 
 if __name__ == '__main__':
     abd = ActionBarDetectorTest()
