@@ -13,8 +13,8 @@ logger=logging.getLogger(__name__)
 class App:
 
     debug = True
-    host = '45.55.211.208'
-    port = 3000
+    host = 'watchlist.ageudum.com'
+    port = 80
     defaultHertz = 2
     
     def __init__(self):

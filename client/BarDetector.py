@@ -37,6 +37,9 @@ def getGameScreenImg(hwnd,left,top,right,bottom):
         width, height = screenImg.size
         #crop the bottom right quarter of the screen
         screenImg = screenImg.crop((int(width * left), int(height * top), int(width * right), int(height*bottom)))
+        myDC.DeleteDC()
+        newDC.DeleteDC()
+        win32gui.DeleteObject(myBitMap.GetHandle())
         return screenImg
     except Exception as err:
         logging.error('Error while attempting to capture game screen')
