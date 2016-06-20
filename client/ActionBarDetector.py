@@ -28,7 +28,36 @@ class ActionBarDetector:
     #     [('bolt', 8275823.0), ('ak', 98029345.0)]
 
     TEMPLATES = {"bolt" : "images/bolt.jpg",
-                 "AK"   : "images/AK.jpg"
+                 "AK"   : "images/AK.jpg",
+                 "eoka_pistol" : "images/eoka.jpg",
+                 "flame" : "images/flame.jpg",
+                 "semi_pistol" : "images/pistol.jpg",
+                 "pump_shotgun" : "images/pump.jpg",
+                 "waterpipe_shotgun" : "images/pipe.jpg",
+                 "rocket_launcher" : "images/rocket.jpg",
+                 "salvaged_cleaver" : "images/cleaver.jpg",
+                 "thompson" : "images/thompson.jpg",
+                 #"salvaged_sword" : "images/ssword.jpg",
+                 "revolver" : "images/revolver.jpg",
+                 "machete"  : "images/machete.jpg",
+                 "bone_club" : "images/bone_club.jpg",
+                 "bone_knife" : "images/bone_knife.jpg",
+                 "custom_smg" : "images/custom_smg.jpg",
+                 "crossbow" : "images/crossbow.jpg",
+                 "spear" : "images/spear.jpg",
+                 "semi_rifle" : "images/semi_rifle.jpg",
+                 "mace" : "images/mace.jpg",
+                 "longsword" : "images/longsword.jpg",
+                 "hunting_bow" : "images/hunting_bow.jpg",
+                 "salvaged_icepick" : "images/salvaged_icepick.jpg",
+                 "stone_hatchet" : "images/stone_hatchet.jpg",
+                 "salvaged_hammer" : "images/salvaged_hammer.jpg",
+                 "salvaged_axe" : "images/salvaged_axe.jpg",
+                 "pickaxe" : "images/pickaxe.jpg",
+                 "hatchet" : "images/hatchet.jpg",
+                 "torch" : "images/torch.jpg",
+                 "stone_pickaxe" : "images/stone_pickaxe.jpg",
+                 "water_bucket" : "images/bucket.jpg"
     } # etc, need to add all items with durability bars
 
     durabilityLimits = [np.array([50, 100, 100]), np.array([65, 255, 255])] # HSV boundaries
@@ -46,8 +75,12 @@ class ActionBarDetector:
         cannythresh2 = 180
 
         templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
+        kernel = np.ones((2,2),np.uint8)
+
         templ_edge = cv2.Canny(templ,cannythresh1,cannythresh2)
+        templ_edge = cv2.dilate(templ_edge,kernel,iterations=1)
         img_edge = cv2.Canny(img,cannythresh1,cannythresh2)
+        img_edge = cv2.dilate(img_edge,kernel,iterations=1)
 
         method = eval('cv2.TM_CCOEFF')
         
