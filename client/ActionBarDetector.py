@@ -5,13 +5,6 @@ from BarDetector import *
 
 class ActionBarDetector:
 
-    # TODO:
-    #
-    #   - Find a solution for other resolutions than 64x64 of action bar slots
-    #       - My thoughts on this are using the width of the action bar slot (which we
-    #         can obtain using the width of the durability contour) scale up the template
-    #         being matched by 64/slotsize (as all images I plan on taking at 64x64 slot size)
-    
     # USAGE:    
     #
     #   - Usage is as simple as:
@@ -72,6 +65,13 @@ class ActionBarDetector:
         cannythresh2 = 180
 
         templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
+        sf = self.getScaleFactor()
+        print sf
+        
+        print templ.shape
+        templ = cv2.resize(templ,dsize=(0,0),fx=sf, fy=sf)
+        print templ.shape
+        cv2.waitKey(0)
         kernel = np.ones((2,2),np.uint8)
 
         templ_edge = cv2.Canny(templ,cannythresh1,cannythresh2)
@@ -92,6 +92,10 @@ class ActionBarDetector:
     def getDurabilityContours(self, image):
         return getContours(image, self.durabilityLimits)
 
+    def getScaleFactor(self):
+        # 90.0 is a magic number representing the width of the action bar slot at 1080p
+        return (self.actionBarSlotImages[0].shape[1] / (90.0))
+    
     def getActionBarSlotBoundingBoxes(self, rustWindow):
     
         # Tries to find the action bar slots with these assumptions:
