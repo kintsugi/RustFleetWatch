@@ -7,9 +7,6 @@ class ActionBarDetector:
 
     # TODO:
     #
-    #   - Get images for all items with durability in the game
-    #       - I can write a tool to do this automatically in 10 minutes on a sandbox server
-    #         if I stop being a lazy shit
     #   - Find a solution for other resolutions than 64x64 of action bar slots
     #       - My thoughts on this are using the width of the action bar slot (which we
     #         can obtain using the width of the durability contour) scale up the template
