@@ -64,30 +64,43 @@ class ActionBarDetector:
         cannythresh1 = 130
         cannythresh2 = 180
 
-        templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
-        sf = self.getScaleFactor()
-        print sf
-        
-        print templ.shape
-        templ = cv2.resize(templ,dsize=(0,0),fx=sf, fy=sf)
-        print templ.shape
-        cv2.waitKey(0)
-        kernel = np.ones((2,2),np.uint8)
+        try:
+            templ = cv2.imread(imagename, cv2.IMREAD_COLOR)
+            assert templ is not None, "Error loading template, is filepath correct?"
+        except AssertionError as err:
+            logging.error(err.msg)
+            raise err
 
-        templ_edge = cv2.Canny(templ,cannythresh1,cannythresh2)
-        templ_edge = cv2.dilate(templ_edge,kernel,iterations=1)
-        img_edge = cv2.Canny(img,cannythresh1,cannythresh2)
-        img_edge = cv2.dilate(img_edge,kernel,iterations=1)
+        try:    
+            sf = self.getScaleFactor()
+            templ = cv2.resize(templ,dsize=(0,0),fx=sf, fy=sf)
 
-        method = eval('cv2.TM_CCOEFF')
+            if img.size < templ.size:
+                logging.error('Detected action bar slot is smaller than template to match')
+                return
+
+            kernel = np.ones((2,2),np.uint8)
+
+            templ_edge = cv2.Canny(templ,cannythresh1,cannythresh2)
+            templ_edge = cv2.dilate(templ_edge,kernel,iterations=1)
+            img_edge = cv2.Canny(img,cannythresh1,cannythresh2)
+            img_edge = cv2.dilate(img_edge,kernel,iterations=1)
+
+            
+        except Exception as err:
+            logging.error('Error while preparing template matching samples')
+            raise err
         
-        res = cv2.matchTemplate(img_edge, templ_edge, method)
-        
-        #w,h=cv2.cvtColor(templ,cv2.COLOR_BGR2GRAY).shape[::-1]
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-        
-        #cv2.rectangle(img, max_loc,(max_loc[0]+w,max_loc[1]+h),255,2)
-        return max_val
+        try:
+            method = eval('cv2.TM_CCOEFF')       
+            res = cv2.matchTemplate(img_edge, templ_edge, method)
+            #w,h=cv2.cvtColor(templ,cv2.COLOR_BGR2GRAY).shape[::-1]
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+            #cv2.rectangle(img, max_loc,(max_loc[0]+w,max_loc[1]+h),255,2)
+            return max_val
+        except Exception as err:
+            logging.error('Error while performing template matching routine')
+            raise err
         
     def getDurabilityContours(self, image):
         return getContours(image, self.durabilityLimits)
